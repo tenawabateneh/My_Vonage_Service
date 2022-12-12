@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="session.css" />
+    <title>Session Page</title>
+    <style>
+      #button {
+        display: inline-block;
+        padding: 15px 32px;
+        font-size: 18px;
+        cursor: pointer;
+        text-align: center;
+        text-decoration: none;
+        outline: none;
+        color: #fff;
+        background-color: #f4511e;
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 9px #999;
+        margin: 4px 2px;
+        opacity: 0.6;
+        transition: 0.3s;
+        cursor: pointer;    
+      }
+
+      #button:hover {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  
+  <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
+  <body>
+
+    <div class="container bump-me">  
+      <div class="body-content">
+  
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Host</h3>
+          </div>
+          <div class="panel-body">
+            <div id="streams">
+              <div id="publisher" class="focus"></div>
+              <div id="subscriberID"></div>
+              <div id="publisherID"></div>              
+                <div id="Links" class="Links"></div>
+            </div>
+          </div>
+          <div class="panel-footer">
+            <form class="archive-options">
+                <fieldset class="archive-options-fields">
+                    <div class="form-group">
+                        <p class="help-block">Archive Options:</p>
+                        <label class="checkbox-inline">
+                            <input type="checkbox" name="hasAudio" checked> Audio
+                        </label>
+                        <label class="checkbox-inline">
+                            <input type="checkbox" name="hasVideo" checked> Video
+                        </label>
+                    </div>
+  
+                    <div class="form-group">
+                        <p class="help-block">Output Mode:</p>
+                        <label class="radio-inline">
+                            <input type="radio" name="outputMode" value="composed" checked> Composed
+                        </label>
+                        <label class="radio-inline">
+                            <input type="radio" name="outputMode" value="individual"> Individual
+                        </label>
+                    </div>
+                </fieldset>
+            </form>
+            <button onclick="startArchive()" id="button" class="btn btn-danger start" >Start archiving</button>
+            <button  onclick="stopArchive()" id="button" class="btn btn-success stop" style="background-color: #4caf50" >Stop archiving</button>
+            <button class="btn toggle-layout" id="button" >Toggle layout</button>
+            <button onclick="publishAudioOnly()" id="button" class="btn btn-danger start" >Turn off Video</button>
+          </div>
+        </div>
+      </div>
+  
+    </div>
+
+    <h1>Audio</h1>
+    <div id="subscriber"></div>
+    <div id="publisher"></div>
+
+    <script src="/js/host.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+
+
+
+    <script>
+      console.log(location.pathname);
+
+      // setting here all active sessions
+      let sessions = {};
+
+      let archive;
+      let archiveID;
+      // make call the API
+      fetch(location.pathname, { method: "POST" })
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          // sessionId = data.sessionId;
+          // apiKey = data.apiKey;
+          // token = data.token;
+          // console.log(data);
+          const session = OT.initSession(data.apiKey, data.sessionId);
+
+          // console.log(session);
+          let name = location.pathname;
+          sessions[name] = session.sessionId;
+
+          // very helpfull 
+          // session.on({
+          //   streamCreated: (event) => {
+          //     session.subscribe(event.stream, "subscriberID");
+          //   },
+          //   archiveStarted: (event) => {
+          //     console.log("Archive Started Event!", event);
+          //   },
+          //   archiveStoped: (event) => {
+          //     console.log("Archive Stoped Event!", event);
+          //   },
+          // });
+
+          var pubVideoOptions = { publishAudio: true, publishVideo: true };
+
+          // function videoStreaming() {
+          const publisher = OT.initPublisher("publisherID", pubVideoOptions);
+          session.connect(data.token, function () {
+            session.publish(publisher);
+          });
+
+          // Session listening for the events
+          session.on("streamCreated", function (event) {
+            // if (!session.hasAudio) {
+            //   // You may want to adjust the user interface
+            //   console.log("VIDEO Stream Has A Audio");
+            // }
+            // if (!session.hasVideo) {
+            //   // You may want to adjust the user interface
+            //   console.log("VIDEO Stream Has A Video");
+            // }
+
+            session.subscribe(event.stream, "subscriberID", {
+              insertMode: "append",
+              //   width: "100%",
+              //   height: "100%",
+            });
+
+            session.on("archivetarted", function (event) {
+              archiveID = event.id;
+              console.log("ARCHIVE STARTED");
+              $(".start").hide();
+              $(".stop").show();
+              disableForm();
+            });
+
+            session.on("startArchiving", (event) => {
+              archiveID = event.id;
+              console.log("ARCHIVE STARTED on API startArchiving ");
+            });
+
+            const sessionId = session.sessionId;
+          });
+
+          // var pubAudioOptions = { publishAudio: true, publishVideo: false };
+        });
+
+      // for archiving only
+      const stopArchive = () => {
+        console.log("Archiving Stoped!!");
+
+        fetch(`/archiveStopped?archiveID=${archive.id}`)
+          .then((response) => response.json())
+          .then((archiveData) => {
+            const videoLink = document.createElement("a");
+            const videoLinkText = document.createTextNode(
+              "Click Here to View the Archive History"
+            );
+            videoLink.appendChild(videoLinkText);
+            videoLink.href = `/viewArchive/${archiveData.id}`;
+            document.getElementById("Links").appendChild(videoLink);
+          })
+          .catch((error) => {
+            alert("There was an error stoping the archive!");
+          });
+      };
+
+      const startArchive = () => {
+        console.log("Archiving Started!!");
+
+        // fetch(`/startArchiving?archiveID=${archive.id}`)
+        // event.preventDefault();
+        console.log("Your Sessions", sessions);
+
+        fetch(`http://localhost:3000/session/archiveStartedWell`, {
+          method: "POST",
+          crossDomain: true,
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+          body: JSON.stringify({
+            archiveID: sessions[location.pathname],
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            console.log(data.archiveID, "Archiving Started");
+          });
+      };
+
+      const publishAudioOnly = () => {
+        
+      }
+
+    </script>
+    <script src="/js/host.js"></script>
+    <!-- <script
+      type="text/javascript"
+      src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0/js/bootstrap.min.js"
+    ></script> -->
+  </body>
+</html>

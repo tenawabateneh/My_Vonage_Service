@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video-API-Stream</title>
+    <!-- <link href="app.css" rel="stylesheet" type="text/css"> -->
+</head>
+<body>
+    <h1>Create Your Session Room</h1>
+    <form id="registration">
+      <label for="username"><b>Username: </b></label>
+      <input type="text" id="username" />
+      <br /> <br />  
+      <label for="userType"><b>User Type: </b></label>
+      <input type="text" id="userType" />
+      <br /> <br />
+      <label for="serviceType"><b>Choose Service Type: </b></label>
+      <select name="serviceType" id="serviceType">
+        <option value="audio"> Audio Call </option>
+        <option value="video"> Video Call </option>
+        <option value="audio_video"> Audio-Video Call </option>
+      </select>
+
+      <input type="submit" />
+    </form>
+
+<script>
+    
+    console.log(location.pathname);
+    // console.log(location.pathname);
+    const form = document.getElementById('registration');
+    form.addEventListener('submit', function(event){
+        event.preventDefault();
+        location.pathname =
+          "/session/" +
+          form.elements.username.value +
+          "/" +
+          form.elements.serviceType.value;
+    });
+</script>
+</body>
+</html>

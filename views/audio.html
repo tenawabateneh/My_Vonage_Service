@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="session.css" />
+    <title>Audio Service Page</title>
+    <style>
+      #button {
+        display: inline-block;
+        padding: 6px 12px;
+        font-size: 16px;
+        cursor: pointer;
+        text-align: center;
+        text-decoration: none;
+        outline: none;
+        color: #fff;
+        background-color: rgb(54, 126, 181);
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 9px #999;
+        margin: 4px 2px;
+        opacity: 0.6;
+        transition: 0.3s;
+        cursor: pointer;
+      }
+
+      #button:hover {
+        opacity: 1;
+      }
+
+      .contentBody {
+        padding-left: 520px;
+      }
+      #streams {
+        /* padding-left: 275px; */
+      }
+      .archive-options-fields {
+        width: 235px;
+      }
+      .button-grouper {
+        display: block;
+        padding: 10px 24px;
+        padding-left: 522px;
+      }
+    </style>
+  </head>
+
+  <script src="https://static.opentok.com/v2/js/opentok.min.js"></script>
+  <body>
+    <div class="container bump-me">
+      <div class="contentBody">
+        <div class="body-content">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <!-- <h3 class="panel-title">Host</h3> -->
+            </div>
+            <div class="panel-body">
+              <div id="streams">
+                <div id="publisher" class="focus"></div>
+                <div id="subscriberID"></div>
+                <div id="publisherID"></div>
+              </div>
+            </div>
+            <div class="panel-footer">
+              <form class="archive-options">
+                <fieldset class="archive-options-fields">
+                  <div class="form-group">
+                    <p class="help-block" style="text-align: center">
+                      <strong> Recording Option </strong>
+                    </p>
+                    <label class="checkbox-inline">
+                      <input type="checkbox" name="hasAudio" checked /> Audio
+                    </label>
+                  </div>
+
+                  <div class="form-group">
+                    <p class="help-block" style="text-align: center">
+                      <strong> Output Mode </strong>
+                    </p>
+                    <label class="radio-inline">
+                      <input
+                        type="radio"
+                        name="outputMode"
+                        value="composed"
+                        checked
+                      />
+                      Composed
+                    </label>
+                    <label class="radio-inline">
+                      <input
+                        type="radio"
+                        name="outputMode"
+                        value="individual"
+                      />
+                      Individual
+                    </label>
+                  </div>
+                </fieldset>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="button-grouper">
+        <button
+          onclick="startArchive()"
+          id="button"
+          class="btn btn-danger start"
+        >
+          Start archiving
+        </button>
+        <button
+          onclick="stopArchive()"
+          id="button"
+          class="btn btn-success stop"
+          style="background-color: #ff0000"
+        >
+          Stop archiving
+        </button>
+      </div>
+      <div class="button-grouper">
+        <button
+          class="btn toggle-layout"
+          id="button"
+          style="border-radius: 5px; box-shadow: 0 9px rgb(0, 0, 0)"
+        >
+          Toggle layout
+        </button>
+      </div>
+    <script
+      type="text/javascript"
+      src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0/js/bootstrap.min.js"
+    ></script>
+
+    <script>
+
+console.log(location.pathname);
+
+      let sessions = {};
+      let publisher;
+      let session;
+
+      var pubVideoOptions = { publishAudio: true, publishVideo: false };
+      
+      var subscriberLayout = { insertMode: "append", width: "100%", height: "100%"};
+      // const initializePublisherModule = () => {
+        console.log(location.pathname);
+        // setting here all active sessions
+
+        // make call the API through the url 'location.pathname'
+        fetch(location.pathname, { method: "POST" })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            console.log(data);
+            // sessionId = data.sessionId;
+            session = OT.initSession(data.apiKey, data.sessionId);
+            // console.log(session);
+            let name = location.pathname;
+            sessions[name] = session.sessionId;
+
+            // function videoStreaming() {
+            publisher = OT.initPublisher("publisherID", pubVideoOptions);
+            publisher.publishVideo(false);
+            session.connect(data.token, function () {
+              session.publish(publisher);
+            });
+
+            // Session listening for the events
+            session.on("streamCreated", function (event) {
+              session.subscribe(event.stream, "subscriberID", {
+                insertMode: "append",
+                width: "100%",
+                height: "100%",
+              });
+              // const sessionId = session.sessionId;
+            });
+          });
+      // };
+</script>
+
+
+  </body>
+  </html>
